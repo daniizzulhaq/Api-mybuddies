@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Breast Cancer Education</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar-active { background-color: #1e40af; color: white; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .preview-image { max-width: 200px; max-height: 200px; object-fit: cover; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-96">
+            <div class="text-center mb-6">
+                <i class="fas fa-user-shield text-4xl text-blue-600 mb-4"></i>
+                <h2 class="text-2xl font-bold">Admin Login</h2>
+            </div>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                    <input type="email" id="loginEmail" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="loginPassword" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                    Login
+                </button>
+            </form>
+            <div class="mt-4 text-center">
+                <button onclick="initializeAdmin()" class="text-blue-600 hover:underline text-sm">
+                    Initialize Default Admin
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Sidebar -->
+        <div class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+            <div class="p-6 border-b">
+                <h1 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-ribbon text-pink-600 mr-2"></i>
+                    BC Education Admin
+                </h1>
+            </div>
+            <nav class="mt-6">
+                <a href="#" onclick="showSection('dashboard')" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    Dashboard
+                </a>
+                <a href="#" onclick="showSection('categories')" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+                    <i class="fas fa-tags mr-3"></i>
+                    Categories
+                </a>
+                <a href="#" onclick="showSection('materials')" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+                    <i class="fas fa-book mr-3"></i>
+                    Materials
+                </a>
+                <a href="#" onclick="showSection('videos')" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+                    <i class="fas fa-video mr-3"></i>
+                    Videos
+                </a>
+            </nav>
+            <div class="absolute bottom-0 w-full p-6 border-t">
+                <button onclick="logout()" class="flex items-center text-red-600 hover:text-red-700">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="ml-64 p-8">
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="content-section active">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800">Dashboard</h2>
+                    <div class="text-sm text-gray-600" id="currentDateTime"></div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg text-white">
+                        <div class="flex items-center">
+                            <i class="fas fa-book text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-semibold">Materials</h3>
+                                <p class="text-2xl font-bold" id="materialCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-lg text-white">
+                        <div class="flex items-center">
+                            <i class="fas fa-video text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-semibold">Videos</h3>
+                                <p class="text-2xl font-bold" id="videoCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg text-white">
+                        <div class="flex items-center">
+                            <i class="fas fa-tags text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-semibold">Categories</h3>
+                                <p class="text-2xl font-bold" id="categoryCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Section -->
+            <div id="categoriesSection" class="content-section">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Categories</h2>
+                    <button onclick="openCategoryModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Add Category
+                    </button>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTable" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Materials Section -->
+            <div id="materialsSection" class="content-section">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Materials</h2>
+                    <button onclick="openMaterialModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Add Material
+                    </button>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materialsTable" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Videos Section -->
+            <div id="videosSection" class="content-section">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Videos</h2>
+                    <button onclick="openVideoModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Add Video
+                    </button>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="videosTable" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-96">
+            <h3 class="text-xl font-bold mb-4" id="categoryModalTitle">Add Category</h3>
+            <form id="categoryForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+                    <input type="text" id="categoryName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                    <textarea id="categoryDescription" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" rows="3"></textarea>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                        Save
+                    </button>
+                    <button type="button" onclick="closeCategoryModal()" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Material Modal -->
+    <div id="materialModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-2/3 max-w-4xl max-h-screen overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4" id="materialModalTitle">Add Material</h3>
+            <form id="materialForm" enctype="multipart/form-data">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Title</label>
+                        <input type="text" id="materialTitle" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Category</label>
+                        <select id="materialCategory" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Content</label>
+                    <textarea id="materialContent" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" rows="6" required></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Image</label>
+                        <input type="file" id="materialImage" accept="image/*" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                        <img id="materialImagePreview" class="preview-image mt-2 rounded" style="display: none;">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Status</label>
+                        <select id="materialStatus" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                        Save Material
+                    </button>
+                    <button type="button" onclick="closeMaterialModal()" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="videoModal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-2/3 max-w-4xl max-h-screen overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4" id="videoModalTitle">Add Video</h3>
+            <form id="videoForm" enctype="multipart/form-data">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Title</label>
+                        <input type="text" id="videoTitle" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Category</label>
+                        <select id="videoCategory" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                    <textarea id="videoDescription" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" rows="4" required></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Video URL (YouTube/External)</label>
+                        <input type="url" id="videoUrl" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="https://youtube.com/...">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Or Upload Video</label>
+                        <input type="file" id="videoFile" accept="video/*" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Thumbnail</label>
+                        <input type="file" id="videoThumbnail" accept="image/*" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                        <img id="videoThumbnailPreview" class="preview-image mt-2 rounded" style="display: none;">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Duration (seconds)</label>
+                        <input type="number" id="videoDuration" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Status</label>
+                        <select id="videoStatus" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                        Save Video
+                    </button>
+                    <button type="button" onclick="closeVideoModal()" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        let currentEditId = null;
+        let categories = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            
+            if (authToken) {
+                validateToken();
+            } else {
+                showLogin();
+            }
+        });
+
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDateTime').textContent = now.toLocaleString('id-ID');
+        }
+
+        async function validateToken() {
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    showDashboard();
+                    loadDashboardStats();
+                    loadCategories();
+                } else {
+                    localStorage.removeItem('authToken');
+                    showLogin();
+                }
+            } catch (error) {
+                console.error('Token validation failed:', error);
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginModal').classList.add('active');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('loginModal').classList.remove('active');
+            document.getElementById('dashboard').classList.remove('hidden');
+        }
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    showDashboard();
+                    loadDashboardStats();
+                    loadCategories();
+                } else {
+                    alert(data.error || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please check your connection.');
+            }
+        });
+
+        async function initializeAdmin() {
+            try {
+                const response = await fetch('/api/admin/init', { method: 'POST' });
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                console.error('Init admin error:', error);
+                alert('Failed to initialize admin');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            authToken = null;
+            showLogin();
+        }
+
+        // Navigation
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all sidebar links
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.classList.remove('sidebar-active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + 'Section').classList.add('active');
+            
+            // Add active class to clicked link
+            event.target.classList.add('sidebar-active');
+            
+            // Load data based on section
+            if (sectionName === 'categories') {
+                loadCategories();
+            } else if (sectionName === 'materials') {
+                loadMaterials();
+            } else if (sectionName === 'videos') {
+                loadVideos();
+            }
+        }
+
+        // Dashboard stats
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('materialCount').textContent = stats.materials;
+                    document.getElementById('videoCount').textContent = stats.videos;
+                    document.getElementById('categoryCount').textContent = stats.categories;
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Categories management
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/admin/categories', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    categories = await response.json();
+                    displayCategories();
+                    updateCategorySelects();
+                }
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        }
+
+        function displayCategories() {
+            const tbody = document.getElementById('categoriesTable');
+            tbody.innerHTML = '';
+            
+            categories.forEach(category => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${category.name}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-500">${category.description || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${new Date(category.created_at).toLocaleDateString('id-ID')}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editCategory(${category.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button onclick="deleteCategory(${category.id})" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateCategorySelects() {
+            const selects = [document.getElementById('materialCategory'), document.getElementById('videoCategory')];
+            
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select Category</option>';
+                
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    if (category.id == currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function openCategoryModal(categoryId = null) {
+            currentEditId = categoryId;
+            const modal = document.getElementById('categoryModal');
+            const title = document.getElementById('categoryModalTitle');
+            
+            if (categoryId) {
+                const category = categories.find(c => c.id === categoryId);
+                title.textContent = 'Edit Category';
+                document.getElementById('categoryName').value = category.name;
+                document.getElementById('categoryDescription').value = category.description || '';
+            } else {
+                title.textContent = 'Add Category';
+                document.getElementById('categoryForm').reset();
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.remove('active');
+            currentEditId = null;
+        }
+
+        function editCategory(id) {
+            openCategoryModal(id);
+        }
+
+        async function deleteCategory(id) {
+            if (!confirm('Are you sure you want to delete this category?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/categories/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    loadCategories();
+                    loadDashboardStats();
+                } else {
+                    alert('Failed to delete category');
+                }
+            } catch (error) {
+                console.error('Delete category error:', error);
+                alert('Failed to delete category');
+            }
+        }
+
+        document.getElementById('categoryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('categoryName').value;
+            const description = document.getElementById('categoryDescription').value;
+            
+            try {
+                const url = currentEditId 
+                    ? `/api/admin/categories/${currentEditId}` 
+                    : '/api/admin/categories';
+                const method = currentEditId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (response.ok) {
+                    closeCategoryModal();
+                    loadCategories();
+                    loadDashboardStats();
+                } else {
+                    alert('Failed to save category');
+                }
+            } catch (error) {
+                console.error('Save category error:', error);
+                alert('Failed to save category');
+            }
+        });
+
+        // Materials management
+        async function loadMaterials() {
+            try {
+                const response = await fetch('/api/admin/materials', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const materials = await response.json();
+                    displayMaterials(materials);
+                }
+            } catch (error) {
+                console.error('Failed to load materials:', error);
+            }
+        }
+
+        function displayMaterials(materials) {
+            const tbody = document.getElementById('materialsTable');
+            tbody.innerHTML = '';
+            
+            materials.forEach(material => {
+                const row = document.createElement('tr');
+                const statusClass = material.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${material.title}</div>
+                        ${material.image ? `<img src="${material.image}" class="w-12 h-12 object-cover rounded mt-1">` : ''}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500">${material.category_name || 'No Category'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${material.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${new Date(material.created_at).toLocaleDateString('id-ID')}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editMaterial(${material.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button onclick="deleteMaterial(${material.id})" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function openMaterialModal(materialId = null) {
+            currentEditId = materialId;
+            const modal = document.getElementById('materialModal');
+            const title = document.getElementById('materialModalTitle');
+            
+            if (materialId) {
+                loadMaterialForEdit(materialId);
+                title.textContent = 'Edit Material';
+            } else {
+                title.textContent = 'Add Material';
+                document.getElementById('materialForm').reset();
+                document.getElementById('materialImagePreview').style.display = 'none';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        async function loadMaterialForEdit(id) {
+            try {
+                const response = await fetch('/api/materials/' + id);
+                if (response.ok) {
+                    const material = await response.json();
+                    const data = material.data;
+                    
+                    document.getElementById('materialTitle').value = data.title;
+                    document.getElementById('materialContent').value = data.content;
+                    document.getElementById('materialCategory').value = data.category_id || '';
+                    document.getElementById('materialStatus').value = data.status;
+                    
+                    if (data.image) {
+                        document.getElementById('materialImagePreview').src = data.image;
+                        document.getElementById('materialImagePreview').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load material:', error);
+            }
+        }
+
+        function closeMaterialModal() {
+            document.getElementById('materialModal').classList.remove('active');
+            currentEditId = null;
+        }
+
+        function editMaterial(id) {
+            openMaterialModal(id);
+        }
+
+        async function deleteMaterial(id) {
+            if (!confirm('Are you sure you want to delete this material?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/materials/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    loadMaterials();
+                    loadDashboardStats();
+                } else {
+                    alert('Failed to delete material');
+                }
+            } catch (error) {
+                console.error('Delete material error:', error);
+                alert('Failed to delete material');
+            }
+        }
+
+        document.getElementById('materialForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('title', document.getElementById('materialTitle').value);
+            formData.append('content', document.getElementById('materialContent').value);
+            formData.append('category_id', document.getElementById('materialCategory').value);
+            formData.append('status', document.getElementById('materialStatus').value);
+            
+            const imageFile = document.getElementById('materialImage').files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+            
+            try {
+                const url = currentEditId 
+                    ? `/api/admin/materials/${currentEditId}` 
+                    : '/api/admin/materials';
+                const method = currentEditId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    closeMaterialModal();
+                    loadMaterials();
+                    loadDashboardStats();
+                } else {
+                    alert('Failed to save material');
+                }
+            } catch (error) {
+                console.error('Save material error:', error);
+                alert('Failed to save material');
+            }
+        });
+
+        // Videos management
+        async function loadVideos() {
+            try {
+                const response = await fetch('/api/admin/videos', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const videos = await response.json();
+                    displayVideos(videos);
+                }
+            } catch (error) {
+                console.error('Failed to load videos:', error);
+            }
+        }
+
+        function displayVideos(videos) {
+            const tbody = document.getElementById('videosTable');
+            tbody.innerHTML = '';
+            
+            videos.forEach(video => {
+                const row = document.createElement('tr');
+                const statusClass = video.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                const duration = video.duration ? Math.floor(video.duration / 60) + ':' + String(video.duration % 60).padStart(2, '0') : '-';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${video.title}</div>
+                        ${video.thumbnail ? `<img src="${video.thumbnail}" class="w-12 h-12 object-cover rounded mt-1">` : ''}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500">${video.category_name || 'No Category'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${duration}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${video.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${new Date(video.created_at).toLocaleDateString('id-ID')}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editVideo(${video.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button onclick="deleteVideo(${video.id})" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function openVideoModal(videoId = null) {
+            currentEditId = videoId;
+            const modal = document.getElementById('videoModal');
+            const title = document.getElementById('videoModalTitle');
+            
+            if (videoId) {
+                loadVideoForEdit(videoId);
+                title.textContent = 'Edit Video';
+            } else {
+                title.textContent = 'Add Video';
+                document.getElementById('videoForm').reset();
+                document.getElementById('videoThumbnailPreview').style.display = 'none';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        async function loadVideoForEdit(id) {
+            try {
+                const response = await fetch('/api/videos/' + id);
+                if (response.ok) {
+                    const video = await response.json();
+                    const data = video.data;
+                    
+                    document.getElementById('videoTitle').value = data.title;
+                    document.getElementById('videoDescription').value = data.description;
+                    document.getElementById('videoUrl').value = data.video_url || '';
+                    document.getElementById('videoDuration').value = data.duration || '';
+                    document.getElementById('videoCategory').value = data.category_id || '';
+                    document.getElementById('videoStatus').value = data.status;
+                    
+                    if (data.thumbnail) {
+                        document.getElementById('videoThumbnailPreview').src = data.thumbnail;
+                        document.getElementById('videoThumbnailPreview').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load video:', error);
+            }
+        }
+
+        function closeVideoModal() {
+            document.getElementById('videoModal').classList.remove('active');
+            currentEditId = null;
+        }
+
+        function editVideo(id) {
+            openVideoModal(id);
+        }
+
+        async function deleteVideo(id) {
+            if (!confirm('Are you sure you want to delete this video?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/videos/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    loadVideos();
+                    loadDashboardStats();
+                } else {
+                    alert('Failed to delete video');
+                }
+            } catch (error) {
+                console.error('Delete video error:', error);
+                alert('Failed to delete video');
+            }
+        }
+
+        document.getElementById('videoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('title', document.getElementById('videoTitle').value);
+            formData.append('description', document.getElementById('videoDescription').value);
+            formData.append('video_url', document.getElementById('videoUrl').value);
+            formData.append('duration', document.getElementById('videoDuration').value);
+            formData.append('category_id', document.getElementById('videoCategory').value);
+            formData.append('status', document.getElementById('videoStatus').value);
+            
+            const videoFile = document.getElementById('videoFile').files[0];
+            if (videoFile) {
+                formData.append('video', videoFile);
+            }
+            
+            const thumbnailFile = document.getElementById('videoThumbnail').files[0];
+            if (thumbnailFile) {
+                formData.append('thumbnail', thumbnailFile);
+            }
+            
+            try {
+                const url = currentEditId 
+                    ? `/api/admin/videos/${currentEditId}` 
+                    : '/api/admin/videos';
+                const method = currentEditId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    closeVideoModal();
+                    loadVideos();
+                    loadDashboardStats();
+                } else {
+                    alert('Failed to save video');
+                }
+            } catch (error) {
+                console.error('Save video error:', error);
+                alert('Failed to save video');
+            }
+        });
+
+        // Image preview functionality
+        document.getElementById('materialImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('materialImagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('videoThumbnail').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('videoThumbnailPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
