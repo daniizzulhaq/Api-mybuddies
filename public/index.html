@@ -157,6 +157,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
@@ -233,21 +234,16 @@
                         <input type="text" id="materialTitle" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
                     </div>
                     <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Author/Instructor</label>
+                        <input type="text" id="materialAuthor" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" placeholder="Dr. Jane Smith">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Category</label>
                         <select id="materialCategory" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
                             <option value="">Select Category</option>
                         </select>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Content</label>
-                    <textarea id="materialContent" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" rows="6" required></textarea>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Image</label>
-                        <input type="file" id="materialImage" accept="image/*" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
-                        <img id="materialImagePreview" class="preview-image mt-2 rounded" style="display: none;">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Status</label>
@@ -256,6 +252,15 @@
                             <option value="draft">Draft</option>
                         </select>
                     </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Content</label>
+                    <textarea id="materialContent" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" rows="6" required></textarea>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Image</label>
+                    <input type="file" id="materialImage" accept="image/*" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    <img id="materialImagePreview" class="preview-image mt-2 rounded" style="display: none;">
                 </div>
                 <div class="flex gap-2">
                     <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
@@ -653,6 +658,12 @@
                         ${material.image ? `<img src="${material.image}" class="w-12 h-12 object-cover rounded mt-1">` : ''}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500">
+                            <i class="fas fa-user-edit text-blue-500 mr-1"></i>
+                            ${material.author || 'No Author'}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-gray-500">${material.category_name || 'No Category'}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -701,6 +712,7 @@
                     const data = material.data;
                     
                     document.getElementById('materialTitle').value = data.title;
+                    document.getElementById('materialAuthor').value = data.author || '';
                     document.getElementById('materialContent').value = data.content;
                     document.getElementById('materialCategory').value = data.category_id || '';
                     document.getElementById('materialStatus').value = data.status;
@@ -750,6 +762,7 @@
             
             const formData = new FormData();
             formData.append('title', document.getElementById('materialTitle').value);
+            formData.append('author', document.getElementById('materialAuthor').value);
             formData.append('content', document.getElementById('materialContent').value);
             formData.append('category_id', document.getElementById('materialCategory').value);
             formData.append('status', document.getElementById('materialStatus').value);

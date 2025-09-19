@@ -278,6 +278,10 @@ router.delete('/categories/:id', authenticateToken, async (req, res) => {
 });
 
 // Materials CRUD
+// Updated Materials CRUD operations with author field
+// Replace the materials section in your admin.js file
+
+// Materials CRUD
 router.get('/materials', authenticateToken, async (req, res) => {
   try {
     const [materials] = await pool.execute(`
@@ -294,18 +298,19 @@ router.get('/materials', authenticateToken, async (req, res) => {
 
 router.post('/materials', authenticateToken, upload.single('image'), async (req, res) => {
   try {
-    const { title, content, category_id, status } = req.body;
+    const { title, content, author, category_id, status } = req.body;
     const image = req.file ? `/uploads/images/${req.file.filename}` : null;
 
     const [result] = await pool.execute(
-      'INSERT INTO materials (title, content, category_id, image, status) VALUES (?, ?, ?, ?, ?)',
-      [title, content, category_id || null, image, status || 'published']
+      'INSERT INTO materials (title, content, author, category_id, image, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [title, content, author || null, category_id || null, image, status || 'published']
     );
 
     res.json({ 
       id: result.insertId, 
       title, 
       content, 
+      author,
       category_id, 
       image, 
       status: status || 'published' 
@@ -318,12 +323,12 @@ router.post('/materials', authenticateToken, upload.single('image'), async (req,
 
 router.put('/materials/:id', authenticateToken, upload.single('image'), async (req, res) => {
   try {
-    const { title, content, category_id, status } = req.body;
+    const { title, content, author, category_id, status } = req.body;
     const { id } = req.params;
     const image = req.file ? `/uploads/images/${req.file.filename}` : undefined;
 
-    let query = 'UPDATE materials SET title = ?, content = ?, category_id = ?, status = ?';
-    let params = [title, content, category_id || null, status || 'published'];
+    let query = 'UPDATE materials SET title = ?, content = ?, author = ?, category_id = ?, status = ?';
+    let params = [title, content, author || null, category_id || null, status || 'published'];
 
     if (image) {
       query += ', image = ?';
@@ -334,8 +339,9 @@ router.put('/materials/:id', authenticateToken, upload.single('image'), async (r
     params.push(id);
 
     await pool.execute(query, params);
-    res.json({ id, title, content, category_id, image, status });
+    res.json({ id, title, content, author, category_id, image, status });
   } catch (error) {
+    console.error('Update material error:', error);
     res.status(500).json({ error: 'Failed to update material' });
   }
 });

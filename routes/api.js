@@ -75,9 +75,13 @@ router.get('/categories/:id', async (req, res) => {
 });
 
 // Materials endpoints
+// Updated Materials API endpoints with author field
+// Replace the materials section in your api.js file
+
+// Materials endpoints
 router.get('/materials', async (req, res) => {
   try {
-    const { page = 1, limit = 10, category } = req.query;
+    const { page = 1, limit = 10, category, author } = req.query;
     const offset = (page - 1) * limit;
     
     let query = `
@@ -95,6 +99,14 @@ router.get('/materials', async (req, res) => {
       countQuery += ' AND category_id = ?';
       params.push(category);
       countParams.push(category);
+    }
+
+    if (author) {
+      query += ' AND m.author LIKE ?';
+      countQuery += ' AND author LIKE ?';
+      const authorFilter = `%${author}%`;
+      params.push(authorFilter);
+      countParams.push(authorFilter);
     }
 
     query += ' ORDER BY m.created_at DESC LIMIT ? OFFSET ?';
@@ -174,6 +186,67 @@ router.get('/materials/category/:categoryId', async (req, res) => {
   } catch (error) {
     console.error('Fetch materials by category error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch materials' });
+  }
+});
+
+// Get materials by author
+router.get('/materials/author/:author', async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+    const authorFilter = `%${req.params.author}%`;
+
+    const [materials] = await pool.execute(`
+      SELECT m.*, c.name as category_name 
+      FROM materials m 
+      LEFT JOIN categories c ON m.category_id = c.id 
+      WHERE m.author LIKE ? AND m.status = 'published'
+      ORDER BY m.created_at DESC
+      LIMIT ? OFFSET ?
+    `, [authorFilter, parseInt(limit), offset]);
+
+    const [totalResult] = await pool.execute(
+      'SELECT COUNT(*) as total FROM materials WHERE author LIKE ? AND status = "published"',
+      [authorFilter]
+    );
+
+    res.json({
+      success: true,
+      data: materials,
+      pagination: {
+        total: totalResult[0].total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(totalResult[0].total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Fetch materials by author error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch materials by author' });
+  }
+});
+
+// Get all authors
+router.get('/authors', async (req, res) => {
+  try {
+    const [authors] = await pool.execute(`
+      SELECT 
+        author,
+        COUNT(*) as material_count,
+        MAX(created_at) as latest_material
+      FROM materials 
+      WHERE author IS NOT NULL AND author != '' AND status = 'published'
+      GROUP BY author 
+      ORDER BY material_count DESC, author
+    `);
+
+    res.json({
+      success: true,
+      data: authors
+    });
+  } catch (error) {
+    console.error('Fetch authors error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch authors' });
   }
 });
 
@@ -281,6 +354,10 @@ router.get('/videos/category/:categoryId', async (req, res) => {
 });
 
 // Search endpoint
+// Updated search endpoint to include author field
+// Replace the search section in your api.js file
+
+// Search endpoint
 router.get('/search', async (req, res) => {
   try {
     const { q: query, type, category, page = 1, limit = 10 } = req.query;
@@ -293,15 +370,16 @@ router.get('/search', async (req, res) => {
     const searchTerm = `%${query}%`;
     let results = { materials: [], videos: [] };
 
-    // Search materials
+    // Search materials (including author field)
     if (!type || type === 'materials') {
       let materialQuery = `
         SELECT m.*, c.name as category_name, 'material' as content_type
         FROM materials m 
         LEFT JOIN categories c ON m.category_id = c.id 
-        WHERE m.status = 'published' AND (m.title LIKE ? OR m.content LIKE ?)
+        WHERE m.status = 'published' 
+        AND (m.title LIKE ? OR m.content LIKE ? OR m.author LIKE ?)
       `;
-      let materialParams = [searchTerm, searchTerm];
+      let materialParams = [searchTerm, searchTerm, searchTerm];
 
       if (category) {
         materialQuery += ' AND m.category_id = ?';
@@ -315,7 +393,7 @@ router.get('/search', async (req, res) => {
       results.materials = materials;
     }
 
-    // Search videos
+    // Search videos (unchanged)
     if (!type || type === 'videos') {
       let videoQuery = `
         SELECT v.*, c.name as category_name, 'video' as content_type
